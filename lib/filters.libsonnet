@@ -1,12 +1,8 @@
 # Useful functions for filtering on emails.
 
 local addresses = {
-  local meMail = $['author'].email,
-
   // Matches messages cc'ed to an address.
-  cc(address): {
-    cc: address,
-  },
+  cc(address): self.ccAny([address]),
 
   // Matches messages cc'ed to any of the addresses.
   ccAny(addresses): {
@@ -14,9 +10,7 @@ local addresses = {
   },
 
   // Matches messages from an address.
-  from(address): {
-    from: address,
-  },
+  from(address): self.fromAny([address]),
 
   // Matches messages from any of the addresses.
   fromAny(addresses): {
@@ -51,29 +45,24 @@ local addresses = {
     or+: [{ to: a } for a in addresses],
   },
 
-  // Matches messages to or cc'ed to the address.
+  // Matches messages with the address in the to: or cc: fields.
   toOrCC(address): {
-    or+: [{ to: address }, { cc: address }],
+    or: [{ to: address }, { cc: address }],
   },
 
-  // Matches messages to or cc'ed to any of the addresses.
+  // Matches messages with any address in the to: or cc: fields.
   toOrCCAny(addresses): {
     or+: std.flattenArrays([[{ to: a }, { cc: a }] for a in addresses])
   },
 
-  // Matches messages to my address.
-  toMe: {
-    or+: [{to: meMail }, {cc: meMail }, {bcc: meMail }],
+  // Matches messages with the address in the to:, cc:, or bcc: fields.
+  includes(address): {
+    or: [{ to: address }, { cc: address }, { bcc: address}],
   },
 
-  // Matches messages that do not to: my address.
-  notToMe: {
-    not: { to: meMail },
-  },
-
-  // Matches messages that do not to:, cc:, or bcc: my address.
-  notIncludeMe: {
-    not: { or: [{to: meMail }, {cc: meMail }, {bcc: meMail }]},
+  // Matches messages with any address in the to:, cc:, or bcc: fields.
+  includesAny(addresses): {
+    or+: std.flattenArrays([[{ to: a }, { cc: a }, { bcc: a }] for a in addresses])
   },
 };
 
@@ -90,14 +79,6 @@ local stdPatch = {
 local operators = {
   _(f): {
     filter: f,
-  },
-
-  _and_not_to_me(f): {
-    filter: { and: stdPatch.flattenDeepArray([[f], addresses.notToMe]) },
-  },
-
-  _and_not_include_me(f): {
-    filter: { and: stdPatch.flattenDeepArray([[f], addresses.notIncludeMe]) },
   },
 
   and(filters): {
@@ -137,4 +118,4 @@ local subjects = {
   },
 };
 
-addresses + operators + querying + subjects
+addresses + operators + querying + stdPatch + subjects
